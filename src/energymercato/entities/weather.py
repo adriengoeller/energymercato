@@ -5,9 +5,9 @@ from datetime import datetime
 
 @dataclass
 class Meteo():
-    wind = 0
-    temperature = 0
-    current_date = datetime.now()
-    cloud_percent = 0
-    rain_percent = 0
+    wind:float = 0
+    temperature:float = 0
+    current_date:datetime = datetime.now()
+    cloud_percent:float = 0
+    rain_percent:float = 0
     
