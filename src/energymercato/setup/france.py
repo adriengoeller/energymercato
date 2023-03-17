@@ -63,3 +63,6 @@ bayet = make_gas_plant(400, "bayet") ; bayet.mwh_cost = 138
 sw_hydro = make_hydro_plant(400, "sw_hydro") ; sw_hydro.mwh_cost = 2
 chin2 = make_nuke_plant(3*p1, "chin2") ; chin2.mwh_cost = 39
 fos2 = make_gas_plant(490, "fos2") ; fos2.mwh_cost = 140
+interco_esp = make_gas_plant(650, "interco_esp") ; interco_esp.mwh_cost = 95
+interco_de = make_gas_plant(750, "interco_de") ; interco_de.mwh_cost = 85
+interco_be = make_gas_plant(550, "interco_be") ; interco_be.mwh_cost = 105

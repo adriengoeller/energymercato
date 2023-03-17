@@ -29,7 +29,7 @@ meteo_temp = {
 
 
 class SimulationPowerConsumption():
-    def __init__(self, rand_level = .05, peak = .9, sum_p_max = 125000) -> None:
+    def __init__(self, rand_level = .05, peak = .99, sum_p_max = 125000) -> None:
         self.peak = peak
         self.sum_p_max = sum_p_max
         self.rand_level = rand_level

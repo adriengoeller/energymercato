@@ -25,14 +25,16 @@ class RealTimeSetup():
         self.transaction_price=transaction_price
         self.h=h
         self.spot_setup = spot_setup
-        
+        print("Initialization of Real Time Market with parameters:\n"
+              +f"- Real time spot price: {spot_price}\n"
+              +f"- Transaction price: {transaction_price}")
         print_style("ready for next phase")
 
 
     def start_spot(self):
         # Begining of 1/24 game round 
         self.h +=1
-        print("="*80+f"\n Welcome in the SPOT Market of day {self.spot_setup.dt.strftime('%Y-%m-%d')} at {self.h}h !")
+        print("="*80+f"\n Welcome in the Real Time Market of day {self.spot_setup.dt.strftime('%Y-%m-%d')} at {self.h}h !")
 
         self.df_spot = self.df_real[self.df_real.hour == self.h]
         res = {}
@@ -69,7 +71,7 @@ class RealTimeSetup():
             try:
                 self.read_spot()
             except Exception as e:
-                pass
+                print(e)
             if abs(self.balance) < 1:
                 break
             else:
@@ -139,7 +141,7 @@ class SpotSetup():
         print_style("Initialization of SPOT Market with parameters :")
         print_style(f"- legal client price : {client_price}€\n"
                     +f"penalty price for J-1 : {penalty_price_j1}€/MWh\n"
-                    +f"ARENH Price and volume proportion: {arenh_price} / {arenh_proportion}")
+                    +f"ARENH Price and volume proportion: {arenh_price}€/MWh / {arenh_proportion}%")
 
     def generate_players(self):
         solo=self.solo
@@ -168,10 +170,10 @@ class SpotSetup():
             ], client_proportion = .5,client_price_mwh=client_price, path=path)
             ngie = Player(name="ngie",score = [0],plant_list=[
                 fos, mont, golfe,choo2, cvent, 
-                cvent_sol, solaire_direct, hydro_ngie
+                cvent_sol, solaire_direct, hydro_ngie, interco_be
             ], client_proportion = .15,client_price_mwh=client_price, path=path)
             gazel = Player(name="gazel",score = [0],plant_list=[
-                huch6,prov5, gazel_wind, gazel_solar
+                huch6,prov5, gazel_wind, gazel_solar, interco_de
             ], client_proportion = .05, client_price_mwh=client_price,path=path)
 
             cnr = Player(name = "cnr", score = [0],plant_list=[
@@ -184,7 +186,7 @@ class SpotSetup():
             ], client_proportion = .15, client_price_mwh=client_price, path=path)
 
 
-            alpiq = Player(name="alpiq", plant_list=[sw_hydro, fos2, chin2],client_proportion = .05, client_price_mwh=client_price, path=path)
+            alpiq = Player(name="alpiq", plant_list=[sw_hydro, fos2, chin2, interco_esp],client_proportion = .05, client_price_mwh=client_price, path=path)
 
             self.players = [
                 ndf, ngie, gazel, cnr, alpiq, totalnrj, 
@@ -197,18 +199,20 @@ class SpotSetup():
             p.write_power_plant()
 
     def simulate_game_data(self, dt = datetime(2022,1,15), ):
-        print(f"Power consumption is taken on Pmax = {(self.total_power-self.total_power_enr)*.95} = self.total_power-self.total_power_enr)*.95")
+        print_style(f"Power consumption is taken on Pmax = {(self.total_power-self.total_power_enr)*.99} = self.total_power-self.total_power_enr)*.95")
         # Define simulation
         self.dt = dt
         self.simu_w = SimulationWeather()
-        self.simu_p = SimulationPowerConsumption(sum_p_max=(self.total_power-self.total_power_enr)*.95)
+        self.simu_p = SimulationPowerConsumption(sum_p_max=(self.total_power-self.total_power_enr)*.99)
 
     def change_round_day(self):
         # Beginning of game round here
         # dt increment
         self.dt += timedelta(days=1)
+        print_style(f"Welcome in the SPOT Market of day {self.dt.strftime('%Y-%m-%d')} !")
         # simulation
 
+        print_style("Simulating weather and consumption...")
         self.simu_w.generate_j(self.dt)
 
         self.simu_p.generate_j(self.dt.day, self.dt.month, self.simu_w.Tmean)
@@ -217,10 +221,12 @@ class SpotSetup():
             proportion_list=[p.client_proportion for p in self.players],
             names = [p.name for p in self.players],
         )
+        print("...ok")
 
-        self.simu_p.j_curve.to_csv(self.path+"/conso_"+self.dt.isoformat()+".csv", sep=";",index=False)
+        print_style("Writing to file")
+        self.simu_p.j_curve.to_csv(self.path+"/conso_"+self.dt.strftime('%Y-%m-%d')+".csv", sep=";",index=False)
 
-        self.simu_w.get_df_j_curve().to_csv(self.path+"/meteo_"+self.dt.isoformat()+".csv", sep=";",index=False)
+        self.simu_w.get_df_j_curve().to_csv(self.path+"/meteo_"+self.dt.strftime('%Y-%m-%d')+".csv", sep=";",index=False)
 
         # step get enr curves
         for p in self.players:
@@ -229,9 +235,11 @@ class SpotSetup():
         # creation table
         self.df_power_0 = create_table(self.players)
         self.df_power = self.df_power_0.copy()
+        
 
     def fix_market(self):
         # fixing 
+        print_style("Fixing market automatic process...")
         sum_conso = self.simu_p.j_curve.Consommation
         j_prev_fixing = {}
         j_prev_power_fixed = {}
@@ -253,6 +261,16 @@ class SpotSetup():
         for p in self.players:
             self.d_fixing.to_csv(self.path+"/"+p.name+"/"+p.name+"_j_cmd.csv",sep=";", index=False)
         print_style("waiting for filling...")
+
+    def plot_fixing(self,h):
+        df_power_j = create_df_power(self.df_power, h)
+        return df_power_j[["cumsum_p_max", "mwh_cost"]].set_index("cumsum_p_max").plot()
+        
+    def plot_conso(self):
+        sum_conso = self.simu_p.j_curve.Consommation
+        return sum_conso.plot()
+
+
 
     def read_prev_from_players(self):
         
