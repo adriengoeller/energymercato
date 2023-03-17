@@ -111,12 +111,20 @@ class SimulationWeather():
             a = random.randint(-1,2)
             b = random.randint(-2,2)
             m.temperature = (Tmax-Tmin)*(math.cos(2*math.pi/(24+b)*(i-14+a))+1)/2 +Tmin
+            if rp > 100:
+                rp =100
             m.rain_percent = rp
             w = wind + random.gauss(0,.8)
             if w < 0:
                 w = 0
             m.wind = w
             c = abs(cp *(1+random.gauss(0,.2)))
+            if c < 0:
+                c = 0
+            elif c > 100:
+                c = 100
+            else:
+                pass
             
             if i<18 and i>8:
                 # print(c)

@@ -16,14 +16,14 @@ def make_plant(plant_type, pmin, pmax, mwh_cost, start_cost):
         return out
     return make_type_plant
 
-def make_storage_plant(StoragePlant, pmin, pmax, 
-    mwh_cost, start_cost,
-    capacity_max, mwh_cost_in, 
+
+def make_storage_plant(plant_type, pmin, pmax, 
+    mwh_cost, start_cost,mwh_cost_in, 
     start_cost_in):
     def make_type_plant(p1,c1):
         out = plant_type(
-            p_min =  0,
-            p_max = 150,
+            p_min =  pmin*p1,
+            p_max = pmax*p1,
             mwh_cost = mwh_cost,
             start_cost = start_cost,
             capacity_max = c1,
@@ -113,7 +113,7 @@ def create_table(players):
 # df_power = create_table(players)
 def create_df_power(df_power, h ): 
     
-    d = df_power[df_power.hour == h]
+    d = df_power[df_power.hour == h].copy()
     d.loc[:,"cumsum_p_max"] = d.loc[:,"p_max"].cumsum()
     d.reset_index(inplace=True)
     return d
@@ -278,9 +278,9 @@ def read_spot(path, dd):
         return dd
 
     dj[["player", "Name", "type", "hour", "p_min", "p_max", "mwh_cost", "p"]] = dd[["player", "Name", "type", "hour", "p_min", "p_max", "mwh_cost", "p"]].values
-    dj.p[dj.p > dj.p_max] = dj.p_max[dj.p > dj.p_max]
-    dj.p[dj.p < dj.p_min] = dj.p_min[dj.p < dj.p_min]
-    dj.p[dj.p < 0] = 0
+    dj.loc[dj.p > dj.p_max,"p"] = dj.loc[dj.p > dj.p_max,"p_max"]
+    dj.loc[dj.p < dj.p_min,"p"] = dj.loc[dj.p < dj.p_min,"p_min"]
+    dj.loc[dj.p < 0] = 0
 
     return dj
 
@@ -295,7 +295,7 @@ def compute_score_hour(players,transaction, transaction_price, h, spot_price, dd
                 )
         if p.name in dd.player[dd.spot_changes != 0].to_list():
             p.score.add_score(
-                amount=abs(dd.spot_changes).sum()*spot_price,
+                amount=int(abs(dd.spot_changes).sum())*spot_price,
                 date=dt.replace(hour=h),
                 cause="SPOT EXCHANGE"
             )

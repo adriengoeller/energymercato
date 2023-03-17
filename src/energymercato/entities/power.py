@@ -42,7 +42,7 @@ class SolarPlant(PowerPlant):
         if p:
             rl /= 2
         p = (1-.01*weather.cloud_percent)*self.p_max*(1+self.rand_level*random.random())
-        return int(p)
+        return abs(int(p))
 
 @dataclass
 class HydroPlant(PowerPlant):
@@ -56,7 +56,7 @@ class HydroPlant(PowerPlant):
         if p:
             rl /= 10        
         p = (1+weather.rain_percent/100)*self.p_max*(1+self.rand_level*random.random())
-        return int(p)
+        return abs(int(p))
 
 
 @dataclass
@@ -84,7 +84,7 @@ class NukePlant(PowerPlant):
 
 @dataclass
 class GasPlant(PowerPlant):
-    failure = 0.001
+    failure = 0.01
     def __init__(self, p_min=0, p_max=0, p=0, mwh_cost=0, start_cost=0, name=""):
         super().__init__(p_min, p_max, p, mwh_cost, start_cost, name)
 
@@ -98,7 +98,7 @@ class GasPlant(PowerPlant):
 
 @dataclass
 class CoalPlant(PowerPlant):
-    failure = 0.01
+    failure = 0.1
     def __init__(self, p_min=0, p_max=0, p=0, mwh_cost=0, start_cost=0, name=""):
         super().__init__(p_min, p_max, p, mwh_cost, start_cost, name)
 

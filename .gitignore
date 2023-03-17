@@ -1,3 +1,4 @@
+
 players/
 data/
 .vscode/
@@ -131,3 +132,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+usetests*
+

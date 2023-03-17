@@ -1,4 +1,3 @@
-
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List
@@ -12,7 +11,7 @@ class Score():
         self.score = pd.DataFrame(columns=["amount","date","cause"])
 
     def add_score(self,amount = 0, date = "", cause = ""):
-        if isinstance(amount,float):
+        if isinstance(amount,(int,float)):
             self.score = pd.concat(
             [self.score,
             pd.DataFrame({"amount":[amount], "date":[date], "cause":[cause]})]
@@ -180,17 +179,13 @@ class Player(PurePlayer):
 
     @staticmethod
     def cut_p_prev(dj):
-        dj.p[dj.p > dj.p_max] = dj.p_max[dj.p > dj.p_max]
-        dj.p[dj.p < dj.p_min] = dj.p_min[dj.p < dj.p_min]
-        dj.p[dj.p < 0] = 0
+        dj.loc[dj.p > dj.p_max,"p"] = dj.p_max[dj.p > dj.p_max]
+        dj.loc[dj.p < dj.p_min,"p"] = dj.p_min[dj.p < dj.p_min]
+        dj.loc[dj.p < 0,"p"] = 0
         return dj
 
     @staticmethod
     def cut_p_market(dj):
-        dj.buy_mwh[dj.buy_mwh < 0] = 0
+        dj.loc[dj.buy_mwh < 0,"buy_mwh"] = 0
         return dj
-
-
-
-
 
