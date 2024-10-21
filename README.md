@@ -1,2 +1,3 @@
 # energymercato
-fake energy market simulation
+Personal project to simulate a fake energy market
+
