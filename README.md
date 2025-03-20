@@ -19,3 +19,7 @@ fake energy market simulation
 - Output for consumption repartition
 - datetime without hour !
 - rain is strange
+
+
+Personal project to simulate a fake energy market
+
