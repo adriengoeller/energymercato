@@ -7,19 +7,20 @@ import pandas as pd
 from energymercato.entities.power import HydroPlant, SolarPlant, WindPlant
 
 class Score():
-    def __init__(self):
+    def __init__(self, player_name):
+        self.player_name = player_name
         self.score = pd.DataFrame(columns=["amount","date","cause"])
 
     def add_score(self,amount = 0, date = "", cause = ""):
         if isinstance(amount,(int,float)):
             self.score = pd.concat(
             [self.score,
-            pd.DataFrame({"amount":[amount], "date":[date], "cause":[cause]})]
+            pd.DataFrame({"amount":[amount], "date":[date], "cause":[self.player_name + " // " + cause]})]
             )
         else:
             self.score = pd.concat(
                 [self.score,
-                pd.DataFrame({"amount":amount, "date":date, "cause":cause})]
+                pd.DataFrame({"amount":amount, "date":date, "cause":self.player_name + " // " + cause})]
                 )
 
     def get_score(self):
@@ -31,7 +32,7 @@ class Score():
 class PurePlayer():
     def __init__(self, name = "ndf", score = [0], client_proportion = 0.0, client_price_mwh=41, path="game"):
         self.name=name
-        self.score=Score()
+        self.score=Score(name)
         self.client_proportion=client_proportion
         self.client_price_mwh = client_price_mwh
         self.path = path
@@ -133,6 +134,10 @@ class Player(PurePlayer):
             return self.j_prev
 
         dj[['Name', 'p_min', 'p_max', 'mwh_cost']] = self.j_prev[['Name', 'p_min', 'p_max', 'mwh_cost']].values
+        # dj["mwh_cost"] = pd.to_numeric(dj["mwh_cost"])
+        # dj["p"] = pd.to_numeric(dj["p"])
+        # dj["p_min"] = pd.to_numeric(dj["p_min"])
+        # dj["p_max"] = pd.to_numeric(dj["p_max"])
         dj = self.cut_p_prev(dj)
         dj.fillna(0, inplace=True)
         self.j_prev_cmd = dj
@@ -189,3 +194,37 @@ class Player(PurePlayer):
         dj.loc[dj.buy_mwh < 0,"buy_mwh"] = 0
         return dj
 
+
+
+def check_j_prev(path):
+    path = Path(path)
+    
+    try:
+        if not path.exists():
+            raise FileNotFoundError
+
+        dj = pd.read_csv(path, sep=";")
+        if not all(item in dj.columns for item in ['hour','Name','type', 'p_min', 'p_max', 'mwh_cost', 'p'] ):
+            for item in ['hour','Name','type', 'p_min', 'p_max', 'cost', 'mwh_cost', 'p']:
+                if not item in dj.columns:
+                    print(item)
+            raise ValueError("Columns not all in ['hour', 'Name','type', 'p_min', 'p_max', 'mwh_cost', 'p']" )
+        return dj
+    except (ValueError,FileNotFoundError):
+        print("check error")
+
+def read_j_market_cmd(path):
+    path = Path(path)
+    
+    try:
+        if not path.exists():
+            raise FileNotFoundError
+
+        dj = pd.read_csv(path, sep=";")
+        if not all(item in dj.columns for item in ["mwh_price","hour","buy_mwh"] ):
+            for item in ["mwh_price","hour","buy_mwh"]:
+                if not item in dj.columns:
+                    print(item)
+            raise ValueError("Columns not all in 'mwh_price','hour'','buy_mwh'" )
+    except (ValueError,FileNotFoundError):
+        print("check error")

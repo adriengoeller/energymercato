@@ -63,10 +63,10 @@ class RealTimeSetup():
 
         print_style("Ready for balancing\n", f"Difference of Real Consumption with SPOT is {self.balance}")
 
-    def wait_for_adjustment(self, time_minutes=2, repeat=5):
+    def wait_for_adjustment(self, time_minutes=1, repeat=9):
         print_style(f"You have {time_minutes} x {repeat} minutes before blackout")
-        for i in range(1,5):
-            print("Tic, Toc... Blackout is coming")
+        for i in range(1,repeat):
+            print(f"Tic, Toc... Blackout is coming : {i}x{time_minutes} min already spent")
             sleep(60*time_minutes)
             try:
                 self.read_spot()
@@ -87,9 +87,17 @@ class RealTimeSetup():
 
     def read_spot(self):
         df_spot = read_spot(self.spot_setup.path+"/"+"spot_"+str(self.h)+"h.csv", self.df_spot.copy())
-        df_spot["spot_changes"] = df_spot.power - df_spot.spot
-        sum_power = self.df_spot.spot.sum()
-        balance = abs(self.spot_setup.simu_p.j_curve.Consommation[self.h] - sum_power)
+        df_spot["spot_changes"] = df_spot.spot
+        verify_if_spot_upper_pmax = df_spot.p_max - df_spot.power - df_spot.spot
+        verify_if_spot_upper_pmax = (verify_if_spot_upper_pmax < 0) & (df_spot.spot != 0)
+        if (verify_if_spot_upper_pmax).any():
+            print_style("Some players are trying to get down the system...")
+            print_style(df_spot.loc[verify_if_spot_upper_pmax, "player"])
+            print_style("This is a warning, DGSE has been warned")
+            return
+        else: 
+            sum_power = df_spot.spot.sum() + df_spot.power.sum()
+            balance = self.spot_setup.simu_p.j_curve.Consommation[self.h] - sum_power
         
         print_style(f"Balance was {self.balance}. It is now {balance}")
         
@@ -100,6 +108,7 @@ class RealTimeSetup():
             print_style("Balance is adjusted !")
 
         else:
+            self.balance = balance
             print_style("Balance is not adjusted")
 
         
@@ -118,8 +127,10 @@ def save(obj_save_tuple, path_file_pkl):
         pickle.dump(obj_save_tuple, outp, pickle.HIGHEST_PROTOCOL)
 
 def load(path_file_pkl) -> Tuple:
-    with open(path_file_pkl, 'wb') as outp:
-        return pickle.dump(path_file_pkl, outp, pickle.HIGHEST_PROTOCOL)
+    # with open(path_file_pkl, 'wb') as outp:
+    #     return pickle.load(path_file_pkl,outp pickle.HIGHEST_PROTOCOL)
+    with open(path_file_pkl, 'rb') as outp:
+        return pickle.load(outp)
 
 
 class SpotSetup():
@@ -165,15 +176,15 @@ class SpotSetup():
         else :
             ndf = Player(name="ndf",score = [0],plant_list=[
                 grave,choo,civ, catt, palu, pen,
-                tri, bug,cru,bla,chin, corde,
-                hydro_ndf,fossette,belfays,marne
+                tri, bug,cru,bla,chin,
+                hydro_ndf,fossette,belfays,marne,chin2
             ], client_proportion = .5,client_price_mwh=client_price, path=path)
             ngie = Player(name="ngie",score = [0],plant_list=[
                 fos, mont, golfe,choo2, cvent, 
                 cvent_sol, solaire_direct, hydro_ngie, interco_be
             ], client_proportion = .15,client_price_mwh=client_price, path=path)
             gazel = Player(name="gazel",score = [0],plant_list=[
-                huch6,prov5, gazel_wind, gazel_solar, interco_de
+                huch6,prov5, gazel_wind, gazel_solar, interco_de,corde,
             ], client_proportion = .05, client_price_mwh=client_price,path=path)
 
             cnr = Player(name = "cnr", score = [0],plant_list=[
@@ -186,7 +197,9 @@ class SpotSetup():
             ], client_proportion = .15, client_price_mwh=client_price, path=path)
 
 
-            alpiq = Player(name="alpiq", plant_list=[sw_hydro, fos2, chin2, interco_esp],client_proportion = .05, client_price_mwh=client_price, path=path)
+            alpiq = Player(name="alpiq", plant_list=[
+                sw_hydro, fos2, interco_esp, alpiq_hydro_1, alpiq_hydro_2, alpiq_hydro_3
+                ],client_proportion = .05, client_price_mwh=client_price, path=path)
 
             self.players = [
                 ndf, ngie, gazel, cnr, alpiq, totalnrj, 
@@ -198,12 +211,12 @@ class SpotSetup():
         for p in self.players:
             p.write_power_plant()
 
-    def simulate_game_data(self, dt = datetime(2022,1,15), ):
-        print_style(f"Power consumption is taken on Pmax = {(self.total_power-self.total_power_enr)*.99} = self.total_power-self.total_power_enr)*.95")
+    def simulate_game_data(self, dt = datetime(2022,1,15), p_max_margin = .85):
+        print_style(f"Power consumption is taken on Pmax = {(self.total_power-self.total_power_enr)*p_max_margin} = self.total_power-self.total_power_enr)*{p_max_margin}")
         # Define simulation
         self.dt = dt
         self.simu_w = SimulationWeather()
-        self.simu_p = SimulationPowerConsumption(sum_p_max=(self.total_power-self.total_power_enr)*.99)
+        self.simu_p = SimulationPowerConsumption(sum_p_max=(self.total_power-self.total_power_enr)*p_max_margin)
 
     def change_round_day(self):
         # Beginning of game round here

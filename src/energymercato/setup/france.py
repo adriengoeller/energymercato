@@ -59,6 +59,9 @@ t_sol = make_solar_plant(480, "t_sol") ; t_sol.mwh_cost = 6
 t_hydro = make_hydro_plant(150, "t_hydro") ; t_hydro.mwh_cost = 4
 marcinelle = make_gas_plant(500, "marcinelle") ; marcinelle.mwh_cost = 154
 bayet = make_gas_plant(400, "bayet") ; bayet.mwh_cost = 138
+alpiq_hydro_1 = t_hydro = make_hydro_plant(50, "alpiq_hydro_1") ; alpiq_hydro_1.mwh_cost = 30
+alpiq_hydro_2 = t_hydro = make_hydro_plant(30, "alpiq_hydro_2") ; alpiq_hydro_2.mwh_cost = 33
+alpiq_hydro_3 = t_hydro = make_hydro_plant(30, "alpiq_hydro_3") ; alpiq_hydro_3.mwh_cost = 34
 
 sw_hydro = make_hydro_plant(400, "sw_hydro") ; sw_hydro.mwh_cost = 2
 chin2 = make_nuke_plant(3*p1, "chin2") ; chin2.mwh_cost = 39

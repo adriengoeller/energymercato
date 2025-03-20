@@ -2,7 +2,8 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 
-
+MWH_SOLAR_PRICE = 140
+MWH_WIND_PRICE = 70
 
 def make_plant(plant_type, pmin, pmax, mwh_cost, start_cost):
     def make_type_plant(p1, name):
@@ -154,8 +155,8 @@ def create_df_power(df_power, h ):
 
 
 def bank_j(player, dt):
-    a = player.j_prev_cmd[["mwh_cost", 'hour', "p"]]
-    a["amount"] = -a["mwh_cost"] * a["p"]
+    a = player.j_prev_cmd.loc[:,("mwh_cost", 'hour', "p")]
+    a.loc[:,"amount"] = -a.loc[:,"mwh_cost"] * a.loc[:,"p"]
     player.score.add_score(amount = a["amount"], date = dt.isoformat(), cause = "pay power J-1")
 
 def get_paid_by_client(player, j_curve, dt):
@@ -171,7 +172,7 @@ def sales_h(df_power, d_fixing, players, dt, arenh_price, arenh_proportion):
     df_temp = pd.DataFrame(columns= ["hour", "buy_mwh", "player"])
     sr=[]
     for p in players:
-        aa = p.j_market_cmd[["mwh_price", "hour", "buy_mwh"]]
+        aa = p.j_market_cmd.loc[:,("mwh_price", "hour", "buy_mwh")]
         aa["player"] = p.name
         sr.append(aa)
     df_temp = pd.concat(sr, axis=0, ignore_index=True)
@@ -186,14 +187,14 @@ def sales_h(df_power, d_fixing, players, dt, arenh_price, arenh_proportion):
     df_power["diff"] = df_power.balance.diff()
     df_power["p_sale"] = np.where(df_power.balance < 0, df_power.loc[df_power.index]["diff"], -df_power.loc[df_power.index]["balance"]+df_power.loc[df_power.index]["diff"])
     df_power = df_power.fillna(0)
-    df_power.p_sale[df_power.p_sale < 0] = 0.0
+    df_power.loc[df_power.p_sale < 0, "p_sale"] = 0.0
 
     df_power["amount_sales"] = df_power.p_sale*df_power.mwh_price
     df_power["amount_sales_cost"] = -df_power.p_sale*df_power.mwh_cost
 
     enr_valo = df_power[ (df_power["p_left"] > 0) & (df_power.type.isin(["WindPlant", "SolarPlant"])) ].copy()
-    enr_valo["enr_amount_sales"] = enr_valo[enr_valo.type=="SolarPlant"].p_left*140
-    enr_valo["enr_amount_sales"] = enr_valo[enr_valo.type=="WindPlant"].p_left*70
+    enr_valo["enr_amount_sales"] = enr_valo[enr_valo.type=="SolarPlant"].p_left*MWH_SOLAR_PRICE
+    enr_valo["enr_amount_sales"] = enr_valo[enr_valo.type=="WindPlant"].p_left*MWH_WIND_PRICE
 
     enr_valo = enr_valo.fillna(0)
 
@@ -287,7 +288,7 @@ def read_spot(path, dd):
 def compute_score_hour(players,transaction, transaction_price, h, spot_price, dd, dt):
     for p in players:
         for t in transaction:
-            if p.name == t:
+            if p.name in t:
                 p.score.add_score(
                     amount=-transaction_price,
                     date=dt.replace(hour=h),
